@@ -1,11 +1,13 @@
-package com.fulfilment.application.monolith.fulfilment;
+package com.fulfilment.application.monolith.fulfilment.adapters.database;
 
+import com.fulfilment.application.monolith.fulfilment.domain.model.FulfilmentAssignment;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 
 @ApplicationScoped
-public class FulfilmentAssignmentRepository implements PanacheRepository<FulfilmentAssignment> {
+public class FulfilmentAssignmentRepository
+    implements PanacheRepository<FulfilmentAssignment> {
 
   public List<FulfilmentAssignment> findByStoreId(Long storeId) {
     return list("store.id", storeId);
@@ -19,7 +21,8 @@ public class FulfilmentAssignmentRepository implements PanacheRepository<Fulfilm
     return list("warehouseBusinessUnitCode", warehouseBusinessUnitCode);
   }
 
-  public FulfilmentAssignment findAssignment(Long storeId, Long productId, String warehouseBuCode) {
+  public FulfilmentAssignment findAssignment(
+      Long storeId, Long productId, String warehouseBuCode) {
     return find(
             "store.id = ?1 and product.id = ?2 and warehouseBusinessUnitCode = ?3",
             storeId,

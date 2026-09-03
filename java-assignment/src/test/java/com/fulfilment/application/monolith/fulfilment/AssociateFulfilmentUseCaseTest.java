@@ -1,12 +1,15 @@
-package com.fulfilment.application.monolith.fulfilment;
+package com.fulfilment.application.monolith.fulfilment.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.fulfilment.application.monolith.fulfilment.adapters.database.FulfilmentAssignmentRepository;
+import com.fulfilment.application.monolith.fulfilment.domain.FulfilmentBusinessException;
+import com.fulfilment.application.monolith.fulfilment.domain.model.FulfilmentAssignment;
+import com.fulfilment.application.monolith.fulfilment.domain.validator.FulfilmentValidator;
 import com.fulfilment.application.monolith.products.Product;
 import com.fulfilment.application.monolith.products.ProductRepository;
 import com.fulfilment.application.monolith.stores.Store;
-import com.fulfilment.application.monolith.warehouses.domain.WarehouseBusinessException;
 import com.fulfilment.application.monolith.warehouses.domain.usecases.InMemoryWarehouseStore;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +42,9 @@ public class AssociateFulfilmentUseCaseTest {
     warehouses.create(InMemoryWarehouseStore.warehouse("WH.4", "EINDHOVEN-001", 20, 1));
     store = new Store("City Store");
     store.id = 10L;
-    useCase = new AssociateFulfilmentUseCase(assignments, products, warehouses);
+    useCase =
+        new AssociateFulfilmentUseCase(
+            assignments, new FulfilmentValidator(assignments, products, warehouses));
   }
 
   @Test
@@ -55,10 +60,11 @@ public class AssociateFulfilmentUseCaseTest {
     useCase.associate(store, 1L, "WH.1");
     useCase.associate(store, 1L, "WH.2");
 
-    WarehouseBusinessException exception =
-        assertThrows(WarehouseBusinessException.class, () -> useCase.associate(store, 1L, "WH.3"));
+    FulfilmentBusinessException exception =
+        assertThrows(
+            FulfilmentBusinessException.class, () -> useCase.associate(store, 1L, "WH.3"));
 
-    assertEquals(WarehouseBusinessException.Kind.VALIDATION, exception.kind());
+    assertEquals(FulfilmentBusinessException.Kind.VALIDATION, exception.kind());
   }
 
   @Test
@@ -67,10 +73,11 @@ public class AssociateFulfilmentUseCaseTest {
     useCase.associate(store, 2L, "WH.2");
     useCase.associate(store, 3L, "WH.3");
 
-    WarehouseBusinessException exception =
-        assertThrows(WarehouseBusinessException.class, () -> useCase.associate(store, 4L, "WH.4"));
+    FulfilmentBusinessException exception =
+        assertThrows(
+            FulfilmentBusinessException.class, () -> useCase.associate(store, 4L, "WH.4"));
 
-    assertEquals(WarehouseBusinessException.Kind.VALIDATION, exception.kind());
+    assertEquals(FulfilmentBusinessException.Kind.VALIDATION, exception.kind());
   }
 
   @Test
@@ -83,18 +90,73 @@ public class AssociateFulfilmentUseCaseTest {
     useCase.associate(other, 4L, "WH.1");
     useCase.associate(other, 5L, "WH.1");
 
-    WarehouseBusinessException exception =
-        assertThrows(WarehouseBusinessException.class, () -> useCase.associate(other, 6L, "WH.1"));
+    FulfilmentBusinessException exception =
+        assertThrows(
+            FulfilmentBusinessException.class, () -> useCase.associate(other, 6L, "WH.1"));
 
-    assertEquals(WarehouseBusinessException.Kind.VALIDATION, exception.kind());
+    assertEquals(FulfilmentBusinessException.Kind.VALIDATION, exception.kind());
   }
 
   @Test
   void rejectsUnknownWarehouse() {
-    WarehouseBusinessException exception =
-        assertThrows(WarehouseBusinessException.class, () -> useCase.associate(store, 1L, "MISSING"));
+    FulfilmentBusinessException exception =
+        assertThrows(
+            FulfilmentBusinessException.class,
+            () -> useCase.associate(store, 1L, "MISSING"));
 
-    assertEquals(WarehouseBusinessException.Kind.NOT_FOUND, exception.kind());
+    assertEquals(FulfilmentBusinessException.Kind.NOT_FOUND, exception.kind());
+  }
+
+  @Test
+  void rejectsUnknownProduct() {
+    FulfilmentBusinessException exception =
+        assertThrows(
+            FulfilmentBusinessException.class,
+            () -> useCase.associate(store, 999L, "WH.1"));
+
+    assertEquals(FulfilmentBusinessException.Kind.NOT_FOUND, exception.kind());
+  }
+
+  @Test
+  void rejectsDuplicateAssociation() {
+    useCase.associate(store, 1L, "WH.1");
+
+    FulfilmentBusinessException exception =
+        assertThrows(
+            FulfilmentBusinessException.class,
+            () -> useCase.associate(store, 1L, "WH.1"));
+
+    assertEquals(FulfilmentBusinessException.Kind.VALIDATION, exception.kind());
+  }
+
+  @Test
+  void rejectsMissingAssociationFields() {
+    assertThrows(
+        FulfilmentBusinessException.class,
+        () -> useCase.associate(null, 1L, "WH.1"));
+    assertThrows(
+        FulfilmentBusinessException.class,
+        () -> useCase.associate(store, null, "WH.1"));
+    assertThrows(
+        FulfilmentBusinessException.class,
+        () -> useCase.associate(store, 1L, " "));
+  }
+
+  @Test
+  void allowsExistingWarehouseForStoreAndExistingProductForWarehouse() {
+    Store other = new Store("Other");
+    other.id = 11L;
+    useCase.associate(store, 1L, "WH.1");
+    useCase.associate(store, 2L, "WH.2");
+    useCase.associate(store, 3L, "WH.3");
+
+    FulfilmentAssignment sameStoreWarehouse =
+        useCase.associate(store, 4L, "WH.1");
+    FulfilmentAssignment sameWarehouseProduct =
+        useCase.associate(other, 1L, "WH.1");
+
+    assertEquals("WH.1", sameStoreWarehouse.warehouseBusinessUnitCode);
+    assertEquals(1L, sameWarehouseProduct.product.id);
   }
 
   private static Product product(Long id, String name) {

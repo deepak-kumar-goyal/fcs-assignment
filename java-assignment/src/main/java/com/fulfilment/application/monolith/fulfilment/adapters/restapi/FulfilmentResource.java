@@ -1,7 +1,10 @@
-package com.fulfilment.application.monolith.fulfilment;
+package com.fulfilment.application.monolith.fulfilment.adapters.restapi;
 
+import com.fulfilment.application.monolith.fulfilment.adapters.database.FulfilmentAssignmentRepository;
+import com.fulfilment.application.monolith.fulfilment.application.AssociateFulfilmentUseCase;
+import com.fulfilment.application.monolith.fulfilment.domain.FulfilmentBusinessException;
+import com.fulfilment.application.monolith.fulfilment.domain.model.FulfilmentAssignment;
 import com.fulfilment.application.monolith.stores.Store;
-import com.fulfilment.application.monolith.warehouses.domain.WarehouseBusinessException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -36,11 +39,13 @@ public class FulfilmentResource {
 
   @POST
   @Transactional
-  public Response create(@PathParam("storeId") Long storeId, FulfilmentAssociationRequest request) {
+  public Response create(
+      @PathParam("storeId") Long storeId, FulfilmentAssociationRequest request) {
     try {
       Store store = requireStore(storeId);
       if (request == null) {
-        throw WarehouseBusinessException.validation("Fulfilment association payload is required");
+        throw FulfilmentBusinessException.validation(
+            "Fulfilment association payload is required");
       }
       FulfilmentAssignment assignment =
           associateFulfilmentUseCase.associate(
@@ -48,8 +53,8 @@ public class FulfilmentResource {
       return Response.status(Response.Status.CREATED)
           .entity(FulfilmentAssociationResponse.from(assignment))
           .build();
-    } catch (WarehouseBusinessException e) {
-      throw toHttp(e);
+    } catch (FulfilmentBusinessException exception) {
+      throw toHttp(exception);
     }
   }
 
@@ -60,7 +65,8 @@ public class FulfilmentResource {
     requireStore(storeId);
     FulfilmentAssignment assignment = assignmentRepository.findById(id);
     if (assignment == null || !assignment.store.id.equals(storeId)) {
-      throw new WebApplicationException("Fulfilment association " + id + " does not exist.", 404);
+      throw new WebApplicationException(
+          "Fulfilment association " + id + " does not exist.", 404);
     }
     assignmentRepository.delete(assignment);
     return Response.status(Response.Status.NO_CONTENT).build();
@@ -69,13 +75,15 @@ public class FulfilmentResource {
   private static Store requireStore(Long storeId) {
     Store store = Store.findById(storeId);
     if (store == null) {
-      throw new WebApplicationException("Store with id of " + storeId + " does not exist.", 404);
+      throw new WebApplicationException(
+          "Store with id of " + storeId + " does not exist.", 404);
     }
     return store;
   }
 
-  private static WebApplicationException toHttp(WarehouseBusinessException exception) {
-    int status = exception.kind() == WarehouseBusinessException.Kind.NOT_FOUND ? 404 : 400;
+  private static WebApplicationException toHttp(FulfilmentBusinessException exception) {
+    int status =
+        exception.kind() == FulfilmentBusinessException.Kind.NOT_FOUND ? 404 : 400;
     return new WebApplicationException(exception.getMessage(), status);
   }
 }

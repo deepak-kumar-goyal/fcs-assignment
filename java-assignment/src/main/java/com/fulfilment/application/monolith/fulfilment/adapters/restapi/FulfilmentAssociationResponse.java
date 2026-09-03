@@ -1,4 +1,6 @@
-package com.fulfilment.application.monolith.fulfilment;
+package com.fulfilment.application.monolith.fulfilment.adapters.restapi;
+
+import com.fulfilment.application.monolith.fulfilment.domain.model.FulfilmentAssignment;
 
 public class FulfilmentAssociationResponse {
 
