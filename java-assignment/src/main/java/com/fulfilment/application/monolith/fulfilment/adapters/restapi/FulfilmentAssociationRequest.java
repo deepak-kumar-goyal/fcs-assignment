@@ -1,4 +1,4 @@
-package com.fulfilment.application.monolith.fulfilment;
+package com.fulfilment.application.monolith.fulfilment.adapters.restapi;
 
 public class FulfilmentAssociationRequest {
 

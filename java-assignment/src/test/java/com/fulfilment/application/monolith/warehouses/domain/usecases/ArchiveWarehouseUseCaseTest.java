@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.fulfilment.application.monolith.location.LocationGateway;
 import com.fulfilment.application.monolith.warehouses.domain.WarehouseBusinessException;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
+import com.fulfilment.application.monolith.warehouses.domain.validators.WarehouseValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -19,9 +20,10 @@ public class ArchiveWarehouseUseCaseTest {
   @BeforeEach
   void setUp() {
     store = new InMemoryWarehouseStore();
-    new CreateWarehouseUseCase(store, new LocationGateway())
+    WarehouseValidator validator = new WarehouseValidator(store, new LocationGateway());
+    new CreateWarehouseUseCase(store, validator)
         .create(InMemoryWarehouseStore.warehouse("MWH.100", "VETSBY-001", 40, 4));
-    useCase = new ArchiveWarehouseUseCase(store);
+    useCase = new ArchiveWarehouseUseCase(store, validator);
   }
 
   @Test

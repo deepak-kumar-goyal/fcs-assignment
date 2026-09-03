@@ -1,6 +1,8 @@
-# Java Code Assignment
+# Java Application Guide
 
-This is a short code assignment that explores various aspects of software development, including API implementation, documentation, persistence layer handling, and testing.
+This module contains the Quarkus warehouse colocation and fulfilment service.
+For the project overview, architecture, screenshots, and current coverage
+figures, see the [repository README](../README.md).
 
 ## About the assignment
 
@@ -38,13 +40,16 @@ Work from this `java-assignment` directory.
 
 Seed data from `src/main/resources/import.sql` is loaded on startup (stores, products, warehouses).
 
-### Tests
+### Tests and coverage
 
 ```sh
-./mvnw test
+./mvnw clean test
 ```
 
-Fails if instruction coverage is below 80% (generated OpenAPI types excluded). Report: `target/jacoco-report/index.html`.
+The build fails if instruction or line coverage is below 81% (generated OpenAPI
+types are excluded). Open the generated report at
+`target/jacoco-report/index.html`. The latest verified measurements are tracked
+in [`docs/COVERAGE.md`](../docs/COVERAGE.md).
 
 ### Package (optional)
 

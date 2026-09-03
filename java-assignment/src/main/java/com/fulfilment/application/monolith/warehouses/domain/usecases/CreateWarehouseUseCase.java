@@ -1,11 +1,9 @@
 package com.fulfilment.application.monolith.warehouses.domain.usecases;
 
-import com.fulfilment.application.monolith.warehouses.domain.WarehouseBusinessException;
-import com.fulfilment.application.monolith.warehouses.domain.models.Location;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.ports.CreateWarehouseOperation;
-import com.fulfilment.application.monolith.warehouses.domain.ports.LocationResolver;
 import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
+import com.fulfilment.application.monolith.warehouses.domain.validators.WarehouseValidator;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -13,36 +11,17 @@ import jakarta.inject.Inject;
 public class CreateWarehouseUseCase implements CreateWarehouseOperation {
 
   private final WarehouseStore warehouseStore;
-  private final LocationResolver locationResolver;
+  private final WarehouseValidator validator;
 
   @Inject
-  public CreateWarehouseUseCase(WarehouseStore warehouseStore, LocationResolver locationResolver) {
+  public CreateWarehouseUseCase(WarehouseStore warehouseStore, WarehouseValidator validator) {
     this.warehouseStore = warehouseStore;
-    this.locationResolver = locationResolver;
+    this.validator = validator;
   }
 
   @Override
   public void create(Warehouse warehouse) {
-    if (warehouse.businessUnitCode == null || warehouse.businessUnitCode.isBlank()) {
-      throw WarehouseBusinessException.validation("Business unit code is required");
-    }
-    if (warehouse.location == null || warehouse.location.isBlank()) {
-      throw WarehouseBusinessException.validation("Warehouse location is required");
-    }
-
-    if (warehouseStore.findByBusinessUnitCode(warehouse.businessUnitCode) != null) {
-      throw WarehouseBusinessException.validation(
-          "Warehouse with business unit code "
-              + warehouse.businessUnitCode
-              + " already exists");
-    }
-
-    WarehouseCapacityRules.requireBasicCapacityAndStock(warehouse);
-
-    Location location = locationResolver.resolveByIdentifier(warehouse.location);
-    WarehouseCapacityRules.requireLocationFeasibility(
-        location, warehouse, warehouseStore, null);
-
+    validator.validateForCreation(warehouse);
     warehouseStore.create(warehouse);
   }
 }

@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.fulfilment.application.monolith.location.LocationGateway;
 import com.fulfilment.application.monolith.warehouses.domain.WarehouseBusinessException;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
+import com.fulfilment.application.monolith.warehouses.domain.validators.WarehouseValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -19,9 +20,10 @@ public class ReplaceWarehouseUseCaseTest {
   @BeforeEach
   void setUp() {
     store = new InMemoryWarehouseStore();
-    CreateWarehouseUseCase create = new CreateWarehouseUseCase(store, new LocationGateway());
+    WarehouseValidator validator = new WarehouseValidator(store, new LocationGateway());
+    CreateWarehouseUseCase create = new CreateWarehouseUseCase(store, validator);
     create.create(InMemoryWarehouseStore.warehouse("MWH.100", "ZWOLLE-002", 20, 8));
-    useCase = new ReplaceWarehouseUseCase(store, new LocationGateway());
+    useCase = new ReplaceWarehouseUseCase(store, validator);
   }
 
   @Test
@@ -70,7 +72,9 @@ public class ReplaceWarehouseUseCaseTest {
 
   @Test
   void allowsReplacementAtAFullLocationByExcludingTheArchivedWarehouse() {
-    CreateWarehouseUseCase create = new CreateWarehouseUseCase(store, new LocationGateway());
+    CreateWarehouseUseCase create =
+        new CreateWarehouseUseCase(
+            store, new WarehouseValidator(store, new LocationGateway()));
     create.create(InMemoryWarehouseStore.warehouse("MWH.200", "HELMOND-001", 20, 4));
 
     Warehouse replacement = InMemoryWarehouseStore.warehouse("MWH.200", "HELMOND-001", 30, 4);
